@@ -1,0 +1,19 @@
+{
+  "name": "Manuskripta",
+  "short_name": "Manuskripta",
+  "description": "AI-Powered Book Creation Platform",
+  "start_url": "/manuskripta-web/",
+  "scope": "/manuskripta-web/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

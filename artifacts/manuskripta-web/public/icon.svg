@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" fill="#000000"/>
+  <rect x="8" y="8" width="176" height="176" rx="24" fill="#0A0A0A" stroke="#D4AF37" stroke-width="2"/>
+  <!-- Book icon -->
+  <rect x="52" y="44" width="70" height="90" rx="4" fill="#1A1A1A" stroke="#D4AF37" stroke-width="2"/>
+  <rect x="56" y="44" width="8" height="90" fill="#D4AF37" opacity="0.3"/>
+  <line x1="72" y1="68" x2="112" y2="68" stroke="#D4AF37" stroke-width="2" stroke-linecap="round"/>
+  <line x1="72" y1="80" x2="112" y2="80" stroke="#D4AF37" stroke-width="2" stroke-linecap="round"/>
+  <line x1="72" y1="92" x2="100" y2="92" stroke="#D4AF37" stroke-width="2" stroke-linecap="round"/>
+  <!-- M letter -->
+  <text x="96" y="158" font-family="serif" font-size="22" font-weight="bold" fill="#D4AF37" text-anchor="middle" letter-spacing="3">MSK</text>
+</svg>
