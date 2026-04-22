@@ -26,12 +26,15 @@ function buildHTML(title: string, markdown: string) {
   const body = marked.parse(markdown);
 
   const tocHtml = toc
-    .map(
-      (e) =>
-        `<div style="margin-left:${(e.depth - 1) * 20}px">
-          <a href="#${e.id}">${e.text}</a>
-        </div>`
-    )
+    .map((e) => {
+      const indent = (e.depth - 1) * 20;
+      return `
+      <div class="toc-row" style="margin-left:${indent}px">
+        <a href="#${e.id}" class="toc-text">${e.text}</a>
+        <span class="toc-dots"></span>
+        <span class="toc-page">•</span>
+      </div>`;
+    })
     .join("");
 
   return `<!DOCTYPE html>
@@ -40,10 +43,43 @@ function buildHTML(title: string, markdown: string) {
 <meta charset="UTF-8" />
 <style>
 @page { margin: 1in 1in 0.9in 1in; }
-body { font-family: Georgia, serif; line-height: 1.7; }
-h1 { page-break-before: always; }
-.title { text-align: center; margin-top: 200px; }
+body { font-family: Georgia, serif; line-height: 1.7; color:#111; }
+
+.title { text-align: center; margin-top: 200px; page-break-after: always; }
+
 .toc { page-break-after: always; }
+.toc h2 { border-bottom:2px solid #000; padding-bottom:8px; }
+
+.toc-row {
+  display: flex;
+  align-items: center;
+  margin: 6px 0;
+}
+
+.toc-text {
+  text-decoration: none;
+  color: #111;
+  white-space: nowrap;
+}
+
+.toc-dots {
+  flex: 1;
+  border-bottom: 1px dotted #999;
+  margin: 0 6px;
+  transform: translateY(-3px);
+}
+
+.toc-page {
+  font-size: 12px;
+  color: #555;
+}
+
+h1 { page-break-before: always; font-size:22pt; border-bottom:2px solid #000; }
+h2 { page-break-before: always; font-size:17pt; border-bottom:1px solid #000; }
+h3 { font-size:13pt; }
+
+p { text-align: justify; margin-bottom:10px; }
+
 </style>
 </head>
 <body>
