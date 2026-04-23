@@ -1,46 +1,27 @@
-import { Marked } from "marked";
 import type { BookJob } from "./types";
 
-function buildHTML(title: string, markdown: string) {
-  const marked = new Marked();
-  const body = marked.parse(markdown);
+export async function triggerBackgroundPDF(job: BookJob) {
+  if (!job.markdownContent) return;
 
-  return `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8" />
-<title>${title}</title>
-<style>
-body { font-family: Georgia, serif; padding: 40px; line-height: 1.6; }
-h1,h2,h3 { margin-top: 24px; }
-</style>
-</head>
-<body>
-<h1>${title}</h1>
-${body}
-</body>
-</html>`;
+  await fetch("/api/export/pdf/background", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id: job.id,
+      title: job.title,
+      markdown: job.markdownContent,
+    }),
+  });
 }
 
-export async function exportToPDF(job: BookJob) {
-  if (!job.markdownContent) {
-    alert("No content available to export.");
-    return;
-  }
-
+export async function downloadPDF(job: BookJob) {
   try {
-    const html = buildHTML(job.title, job.markdownContent);
+    const res = await fetch(`/api/export/pdf/${job.id}`);
 
-    const res = await fetch("/api/export/pdf", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: job.title,
-        html,
-      }),
-    });
-
-    if (!res.ok) throw new Error("Failed to generate PDF");
+    if (res.status === 404) {
+      alert("Preparing your PDF...");
+      return;
+    }
 
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
@@ -55,6 +36,6 @@ export async function exportToPDF(job: BookJob) {
     URL.revokeObjectURL(url);
   } catch (err) {
     console.error(err);
-    alert("PDF export failed.");
+    alert("Download failed");
   }
 }
