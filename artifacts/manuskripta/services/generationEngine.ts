@@ -1,4 +1,4 @@
-// UPDATED VERSION WITH STRICT TOC ENFORCEMENT
+// UPDATED VERSION WITH SUBHEADING INJECTION
 import type { BookInputs, BookJob, JobLog } from "@/context/AppContext";
 import {
   assembleFinalBook,
@@ -37,15 +37,18 @@ export async function runBookGeneration(
     const inputs = job.inputs;
     const parseResult = parseTOCDetailed(inputs.tableOfContents);
 
-    // 🔥 IMPORTANT CHANGE: include ALL sections, not just chapters
-    const tocParsed = parseResult.chapters.map((c) => c.title);
-    const totalSections = tocParsed.length;
+    const tocDetailed = parseResult.chapters;
+    const totalSections = tocDetailed.length;
 
     if (totalSections === 0) {
       throw new Error("No sections detected in Table of Contents");
     }
 
-    updateJob(job.id, { tocParsed, totalChapters: totalSections, status: "processing" });
+    updateJob(job.id, {
+      tocParsed: tocDetailed.map((c) => c.title),
+      totalChapters: totalSections,
+      status: "processing",
+    });
 
     const wordTargets = calculateWordTargets(inputs, totalSections);
 
@@ -55,7 +58,9 @@ export async function runBookGeneration(
     const existingSummaries: string[] = [];
 
     for (let i = 0; i < totalSections; i++) {
-      const sectionTitle = tocParsed[i];
+      const section = tocDetailed[i];
+      const sectionTitle = section.title;
+      const subsectionList = section.subsections || [];
 
       log(`Generating: ${sectionTitle}`, "info");
 
@@ -65,8 +70,17 @@ export async function runBookGeneration(
 
       while (!success && attempts < 3) {
         try {
+          const enhancedInputs: BookInputs = {
+            ...inputs,
+            additionalPrompt: `${inputs.additionalPrompt || ""}\n\nMANDATORY SUBSECTIONS TO COVER (INSIDE THIS CHAPTER):\n\n${
+              subsectionList.length > 0
+                ? subsectionList.map((s, idx) => `${idx + 1}. ${s}`).join("\n")
+                : "No subsections provided — structure intelligently."
+            }\n\nRULES:\n- Every subsection MUST appear in this chapter\n- Use proper Markdown headings (### or ####)\n- Do NOT skip any subsection\n- Do NOT merge multiple subsections into one\n- Each subsection must contain meaningful, developed content\n`,
+          } as BookInputs;
+
           content = await generateChapter(
-            inputs,
+            enhancedInputs,
             blueprint,
             sectionTitle,
             i,
@@ -109,7 +123,7 @@ export async function runBookGeneration(
     const markdown = await assembleFinalBook(
       inputs,
       existingChapters,
-      tocParsed,
+      tocDetailed.map((c) => c.title),
       ""
     );
 
