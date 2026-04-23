@@ -1,49 +1,55 @@
-// UPDATED: TOC now includes ALL sections + proper subsection handling
+// === MODEL SELECTION LOGIC ADDED ===
+const DEEPSEEK_CHAT_MODEL = "deepseek-chat-v3.2";
+const DEEPSEEK_REASONER_MODEL = "deepseek-reasoner";
 
-const NON_CHAPTER_PATTERN = /^(table of contents|contents)$/i;
+function isComplexBook(inputs) {
+  const tocLength = inputs.tableOfContents?.split("\n").length || 0;
+  const hasHeavyNotes = (inputs.additionalPrompt || "").length > 200;
+  const hasMemory = (inputs.memoryBank || "").length > 200;
+  const largeBook = inputs.maxPages && inputs.maxPages > 120;
 
-function runParser(rawLines: string[], pattern: RegExp, extract: Extractor): { chapters: ParsedChapter[]; warnings: string[] } {
-  const chapters: ParsedChapter[] = [];
-  const warnings: string[] = [];
-  let counter = 0;
-
-  for (const raw of rawLines) {
-    const line = cleanTocLine(raw);
-    if (!line) continue;
-
-    if (NON_CHAPTER_PATTERN.test(line)) continue;
-
-    const m = line.match(pattern);
-
-    if (m) {
-      counter++;
-      const { bareTitle } = extract(m, counter);
-      chapters.push({
-        title: `Chapter ${counter}: ${bareTitle}`,
-        bareTitle,
-        number: counter,
-        subsections: [],
-      });
-      continue;
-    }
-
-    // 🔥 NEW: subsection-aware logic
-    if (chapters.length === 0) {
-      // First item becomes a section (e.g., Introduction)
-      counter++;
-      chapters.push({
-        title: `Chapter ${counter}: ${line}`,
-        bareTitle: line,
-        number: counter,
-        subsections: [],
-      });
-    } else {
-      // Treat as subsection of the last section
-      chapters[chapters.length - 1].subsections.push(line);
-    }
-  }
-
-  return { chapters, warnings };
+  return tocLength > 12 || hasHeavyNotes || hasMemory || largeBook;
 }
 
-// rest of file unchanged
+function selectModel(inputs) {
+  return isComplexBook(inputs)
+    ? DEEPSEEK_REASONER_MODEL
+    : DEEPSEEK_CHAT_MODEL;
+}
+
+// === UPDATED CALL FUNCTION ===
+async function callDeepSeek(messages, maxTokens = 4096, inputs) {
+  const apiKey = getApiKey();
+
+  if (!apiKey) {
+    throw new Error("DeepSeek API key not configured.");
+  }
+
+  const model = inputs ? selectModel(inputs) : DEEPSEEK_CHAT_MODEL;
+
+  console.log("Using model:", model);
+
+  const response = await fetch(DEEPSEEK_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      max_tokens: maxTokens,
+      temperature: 0.7,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`DeepSeek API error ${response.status}: ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.choices[0]?.message?.content ?? "";
+}
+
+// NOTE: All existing calls to callDeepSeek should now pass `inputs` as third argument
