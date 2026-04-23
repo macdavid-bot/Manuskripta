@@ -1,9 +1,14 @@
 import express from "express";
 import puppeteer from "puppeteer";
+import fs from "fs";
+import path from "path";
 import { enqueuePDFJob } from "./pdfQueue";
 import { Marked } from "marked";
 
 const router = express.Router();
+
+const PDF_DIR = path.join(process.cwd(), "generated-pdfs");
+if (!fs.existsSync(PDF_DIR)) fs.mkdirSync(PDF_DIR);
 
 function slugify(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
@@ -43,97 +48,48 @@ function buildHTML(title: string, markdown: string) {
 <meta charset="UTF-8" />
 <style>
 @page { margin: 1in 1in 0.9in 1in; }
-body { font-family: Georgia, serif; line-height: 1.7; color:#111; }
-
-.title { text-align: center; margin-top: 200px; page-break-after: always; }
-
-.toc { page-break-after: always; }
-.toc h2 { border-bottom:2px solid #000; padding-bottom:8px; }
-
-.toc-row {
-  display: flex;
-  align-items: center;
-  margin: 6px 0;
-}
-
-.toc-text {
-  text-decoration: none;
-  color: #111;
-  white-space: nowrap;
-}
-
-.toc-dots {
-  flex: 1;
-  border-bottom: 1px dotted #999;
-  margin: 0 6px;
-  transform: translateY(-3px);
-}
-
-.toc-page {
-  font-size: 12px;
-  color: #555;
-}
-
-h1 { page-break-before: always; font-size:22pt; border-bottom:2px solid #000; }
-h2 { page-break-before: always; font-size:17pt; border-bottom:1px solid #000; }
-h3 { font-size:13pt; }
-
-p { text-align: justify; margin-bottom:10px; }
-
+body { font-family: Georgia, serif; line-height: 1.7; }
+.title { text-align:center; margin-top:200px; page-break-after:always; }
+.toc { page-break-after:always; }
 </style>
 </head>
 <body>
-
-<div class="title">
-<h1>${title}</h1>
-</div>
-
-<div class="toc">
-<h2>Table of Contents</h2>
-${tocHtml}
-</div>
-
+<div class="title"><h1>${title}</h1></div>
+<div class="toc"><h2>Table of Contents</h2>${tocHtml}</div>
 ${body}
-
 </body>
 </html>`;
 }
 
-router.post("/export/pdf", async (req, res) => {
-  const { title, markdown } = req.body;
+async function generatePDF(filePath: string, html: string) {
+  const browser = await puppeteer.launch({ args: ["--no-sandbox"] });
+  const page = await browser.newPage();
+  await page.setContent(html, { waitUntil: "networkidle0" });
+  await page.pdf({ path: filePath, printBackground: true });
+  await browser.close();
+}
 
-  try {
-    await enqueuePDFJob(async () => {
-      const html = buildHTML(title, markdown);
+// 🔥 Background generation trigger
+router.post("/export/pdf/background", async (req, res) => {
+  const { title, markdown, id } = req.body;
+  const filePath = path.join(PDF_DIR, `${id}.pdf`);
 
-      const browser = await puppeteer.launch({ args: ["--no-sandbox"] });
-      const page = await browser.newPage();
+  enqueuePDFJob(async () => {
+    const html = buildHTML(title, markdown);
+    await generatePDF(filePath, html);
+  });
 
-      await page.setContent(html, { waitUntil: "networkidle0" });
+  res.json({ status: "queued" });
+});
 
-      const pdfBuffer = await page.pdf({
-        printBackground: true,
-        margin: {
-          top: "1in",
-          right: "1in",
-          bottom: "0.9in",
-          left: "1in",
-        },
-      });
+// ⚡ Instant download endpoint
+router.get("/export/pdf/:id", (req, res) => {
+  const filePath = path.join(PDF_DIR, `${req.params.id}.pdf`);
 
-      await browser.close();
-
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${title || "book"}.pdf"`
-      );
-
-      res.send(pdfBuffer);
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("PDF generation failed");
+  if (fs.existsSync(filePath)) {
+    res.download(filePath);
+  } else {
+    res.status(404).send("PDF not ready");
   }
 });
 
