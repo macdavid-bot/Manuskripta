@@ -44,7 +44,7 @@ app.use("/api-server/api", router);
 if (process.env.NODE_ENV === "production") {
   const webDistPath = path.resolve(__dirname, "../../manuskripta-web/dist/public");
   app.use("/manuskripta-web", express.static(webDistPath));
-  app.get("/manuskripta-web/*", (_req, res) => {
+  app.get("/manuskripta-web/{*splat}", (_req, res) => {
     res.sendFile(path.join(webDistPath, "index.html"));
   });
   app.get("/", (_req, res) => {
