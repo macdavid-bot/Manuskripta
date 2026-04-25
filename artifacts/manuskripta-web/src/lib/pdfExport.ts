@@ -10,6 +10,7 @@ export async function triggerBackgroundPDF(job: BookJob) {
     body: JSON.stringify({
       id: job.id,
       title: job.title,
+      author: job.inputs?.authorName,
       markdown: job.markdownContent,
     }),
   });

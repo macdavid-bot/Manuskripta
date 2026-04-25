@@ -38,6 +38,7 @@ export default function SettingsPage() {
 
   const [memoryBank, setMemoryBank] = useState(settings.memoryBank);
   const [defaultCopyright, setDefaultCopyright] = useState(settings.defaultCopyright);
+  const [defaultAuthor, setDefaultAuthor] = useState(settings.defaultAuthor ?? "");
   const [defaultTones, setDefaultTones] = useState<string[]>(settings.defaultTones);
   const [saved, setSaved] = useState(false);
 
@@ -46,7 +47,7 @@ export default function SettingsPage() {
   };
 
   const handleSave = () => {
-    updateSettings({ memoryBank, defaultCopyright, defaultTones });
+    updateSettings({ memoryBank, defaultCopyright, defaultAuthor, defaultTones });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -103,6 +104,12 @@ export default function SettingsPage() {
             <label style={labelStyle}>Memory Bank</label>
             <p style={{ color: muted, fontSize: "12px", marginBottom: "12px" }}>Automatically injected into every book generation. Use it for your writing style, brand voice, audience, or recurring preferences.</p>
             <textarea value={memoryBank} onChange={(e) => setMemoryBank(e.target.value)} placeholder="e.g. Write for first-time entrepreneurs aged 25–35..." rows={6} style={inputStyle} />
+          </div>
+
+          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: "12px", padding: "24px" }}>
+            <label style={labelStyle}>Default Author Name</label>
+            <p style={{ color: muted, fontSize: "12px", marginBottom: "12px" }}>Pre-filled in the Author Name field when creating a new book. Appears on the title page and in the copyright notice.</p>
+            <input value={defaultAuthor} onChange={(e) => setDefaultAuthor(e.target.value)} placeholder="e.g. Jane Doe" style={inputStyle} />
           </div>
 
           <div style={{ background: card, border: `1px solid ${border}`, borderRadius: "12px", padding: "24px" }}>

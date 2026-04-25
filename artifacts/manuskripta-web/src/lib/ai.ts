@@ -246,10 +246,15 @@ Content (first 1000 chars): ${chapterContent.substring(0, 1000)}`;
 }
 
 export async function generateCopyright(inputs: BookInputs): Promise<string> {
-  const prompt = `Generate a professional copyright page text for:
-Title: "${inputs.title}"
+  const authorLine = inputs.authorName ? `\nAuthor: "${inputs.authorName}"` : "";
+  const authorInstruction = inputs.authorName
+    ? `Use "${inputs.authorName}" as the copyright holder / author name.`
+    : `Use a generic placeholder for the author name.`;
 
-Include: copyright year (${new Date().getFullYear()}), rights reserved statement, disclaimer, and a note that it can be used for similar books by the same author. Keep it concise and professional.`;
+  const prompt = `Generate a professional copyright page text for:
+Title: "${inputs.title}"${authorLine}
+
+Include: copyright year (${new Date().getFullYear()}), the author/holder name, rights reserved statement, disclaimer, and a note that it can be used for similar books by the same author. ${authorInstruction} Keep it concise and professional.`;
 
   return await callAI([{ role: "user", content: prompt }], 300);
 }
@@ -262,6 +267,9 @@ export async function assembleFinalBook(
 ): Promise<string> {
   const tocMarkdown = tocParsed.map((ch, i) => `${i + 1}. ${ch}`).join("\n");
   let book = `# ${inputs.title}\n\n`;
+  if (inputs.authorName) {
+    book += `_by ${inputs.authorName}_\n\n`;
+  }
   book += `## Copyright\n\n${copyrightText}\n\n`;
   book += `## Table of Contents\n\n${tocMarkdown}\n\n`;
   book += chapters.join("\n\n");

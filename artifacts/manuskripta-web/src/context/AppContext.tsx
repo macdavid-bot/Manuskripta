@@ -10,6 +10,7 @@ const POLL_INTERVAL_MS = 5000;
 const DEFAULT_SETTINGS: UserSettings = {
   theme: "dark",
   defaultCopyright: "",
+  defaultAuthor: "",
   memoryBank: "",
   autoDownload: false,
   defaultTones: [],

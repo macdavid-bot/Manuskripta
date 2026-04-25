@@ -1,6 +1,7 @@
 export interface UserSettings {
   theme: "dark" | "light";
   defaultCopyright: string;
+  defaultAuthor: string;
   memoryBank: string;
   autoDownload: boolean;
   defaultTones: string[];
@@ -49,6 +50,7 @@ export interface BookInputs {
   headingColors?: HeadingColors;
   copyrightOption: "generate" | "insert" | "default";
   copyrightText?: string;
+  authorName?: string;
   additionalPrompt?: string;
   memoryBank?: string;
   mode: "create" | "format";

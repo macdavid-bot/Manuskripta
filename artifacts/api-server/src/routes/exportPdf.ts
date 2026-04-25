@@ -14,7 +14,16 @@ function slugify(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
 }
 
-function buildHTML(title: string, markdown: string) {
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function buildHTML(title: string, markdown: string, author?: string) {
   const toc: any[] = [];
 
   const marked = new Marked();
@@ -42,6 +51,10 @@ function buildHTML(title: string, markdown: string) {
     })
     .join("");
 
+  const authorHtml = author && author.trim()
+    ? `<p class="author">by ${escapeHtml(author.trim())}</p>`
+    : "";
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -50,11 +63,13 @@ function buildHTML(title: string, markdown: string) {
 @page { margin: 1in 1in 0.9in 1in; }
 body { font-family: Georgia, serif; line-height: 1.7; }
 .title { text-align:center; margin-top:200px; page-break-after:always; }
+.title h1 { margin-bottom: 24px; }
+.title .author { font-size: 18px; font-style: italic; color: #444; margin-top: 0; }
 .toc { page-break-after:always; }
 </style>
 </head>
 <body>
-<div class="title"><h1>${title}</h1></div>
+<div class="title"><h1>${escapeHtml(title)}</h1>${authorHtml}</div>
 <div class="toc"><h2>Table of Contents</h2>${tocHtml}</div>
 ${body}
 </body>
@@ -71,11 +86,11 @@ async function generatePDF(filePath: string, html: string) {
 
 // 🔥 Background generation trigger
 router.post("/export/pdf/background", async (req, res) => {
-  const { title, markdown, id } = req.body;
+  const { title, markdown, id, author } = req.body;
   const filePath = path.join(PDF_DIR, `${id}.pdf`);
 
   enqueuePDFJob(async () => {
-    const html = buildHTML(title, markdown);
+    const html = buildHTML(title, markdown, author);
     await generatePDF(filePath, html);
   });
 

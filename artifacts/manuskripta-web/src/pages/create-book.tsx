@@ -64,6 +64,9 @@ export default function CreateBookPage() {
 
   // All hooks must be declared before any conditional return
   const [title, setTitle] = useState("");
+  const [authorName, setAuthorName] = useState(
+    (settings.defaultAuthor && settings.defaultAuthor.trim()) || user?.name || ""
+  );
   const [toc, setToc] = useState("");
   const [minPages, setMinPages] = useState(80);
   const [maxPages, setMaxPages] = useState(120);
@@ -107,6 +110,7 @@ export default function CreateBookPage() {
     const now = Date.now();
     const inputs: BookInputs = {
       title: title.trim(),
+      authorName: authorName.trim() || undefined,
       tableOfContents: toc.trim(),
       minPages,
       maxPages,
@@ -164,6 +168,9 @@ export default function CreateBookPage() {
         <div style={{ backgroundColor: card, border: `1px solid ${border}`, borderRadius: "12px", padding: "28px" }}>
           <Field label="Book Title *">
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter your book title..." style={{ ...inputStyle, backgroundColor: fieldBg, color: text, border: `1px solid ${border}` }} onFocus={(e) => (e.target.style.borderColor = GOLD)} onBlur={(e) => (e.target.style.borderColor = border)} />
+          </Field>
+          <Field label="Author Name" hint="Appears on the title page and in the copyright notice of the final export.">
+            <input value={authorName} onChange={(e) => setAuthorName(e.target.value)} placeholder="e.g. Jane Doe" style={{ ...inputStyle, backgroundColor: fieldBg, color: text, border: `1px solid ${border}` }} onFocus={(e) => (e.target.style.borderColor = GOLD)} onBlur={(e) => (e.target.style.borderColor = border)} />
           </Field>
           <Field label="Table of Contents *" hint="One chapter per line. Chapter numbers are optional.">
             <textarea value={toc} onChange={(e) => setToc(e.target.value)} placeholder={"Introduction\nChapter 1: Getting Started\nChapter 2: Core Concepts\nConclusion"} rows={8} style={{ ...inputStyle, backgroundColor: fieldBg, color: text, border: `1px solid ${border}`, resize: "vertical", fontFamily: "monospace", lineHeight: "1.6" }} onFocus={(e) => (e.target.style.borderColor = GOLD)} onBlur={(e) => (e.target.style.borderColor = border)} />
