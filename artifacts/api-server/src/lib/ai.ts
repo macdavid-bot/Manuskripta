@@ -2,6 +2,7 @@ const DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions";
 
 export interface BookInputs {
   title: string;
+  subtitle?: string;
   tableOfContents: string;
   minPages: number;
   maxPages: number;
@@ -14,6 +15,11 @@ export interface BookInputs {
   memoryBank?: string;
   mode: "create" | "format";
   formatData?: FormatBookData;
+}
+
+function getPromptTitle(inputs: BookInputs): string {
+  const subtitle = inputs.subtitle?.trim();
+  return subtitle ? `${inputs.title}: ${subtitle}` : inputs.title;
 }
 
 export interface FormatBookData {
@@ -380,7 +386,7 @@ export async function createBookBlueprint(inputs: BookInputs): Promise<string> {
   const tones = inputs.tones.length > 0 ? inputs.tones.join(", ") : "auto-determined";
   const prompt = `You are a world-class writing strategist. Create an internal Book Blueprint for:
 
-Title: "${inputs.title}"
+Title: "${getPromptTitle(inputs)}"
 Table of Contents: ${inputs.tableOfContents}
 Tone(s): ${tones}
 Storytelling: ${inputs.allowStorytelling ? "Enabled" : "Disabled"}
@@ -793,7 +799,7 @@ Depth + clarity + execution > speed.`;
 USER INPUTS
 -----------------------------------
 
-Book Title: "${inputs.title}"
+Book Title: "${getPromptTitle(inputs)}"
 This Chapter: "${fullChapterHeading}" (Chapter ${chapterNum} of ${totalChapters})
 
 ⚠️ ABSOLUTE RULE: You are writing ONLY Chapter ${chapterNum}. Do NOT create new chapters. Do NOT write Chapter ${chapterNum + 1} or beyond. Do NOT add Introduction or Conclusion. The chapter list is FINAL — there are exactly ${totalChapters} chapters in this book and your job is just this one.
@@ -860,7 +866,7 @@ Content (first 1000 chars): ${chapterContent.substring(0, 1000)}`;
 
 export async function generateCopyright(inputs: BookInputs): Promise<string> {
   const prompt = `Generate a professional copyright page text for:
-Title: "${inputs.title}"
+Title: "${getPromptTitle(inputs)}"
 
 Include: copyright year (${new Date().getFullYear()}), rights reserved statement, disclaimer, and a note that it can be used for similar books by the same author. Keep it concise and professional.`;
 

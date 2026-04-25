@@ -33,12 +33,14 @@ router.get("/", requireAuth, async (req: AuthRequest, res) => {
 router.post("/", requireAuth, async (req: AuthRequest, res) => {
   try {
     const jobData = req.body as typeof jobsTable.$inferInsert;
+    const normalizedSubtitle = typeof jobData.subtitle === "string" ? jobData.subtitle.trim() : undefined;
+    const normalizedJobData = { ...jobData, subtitle: normalizedSubtitle && normalizedSubtitle.length > 0 ? normalizedSubtitle : null };
     const job = await db
       .insert(jobsTable)
-      .values({ ...jobData, userEmail: req.user!.email })
+      .values({ ...normalizedJobData, userEmail: req.user!.email })
       .onConflictDoUpdate({
         target: jobsTable.id,
-        set: { ...jobData, userEmail: req.user!.email },
+        set: { ...normalizedJobData, userEmail: req.user!.email },
       })
       .returning();
     res.json({ job: job[0] });
