@@ -11,6 +11,18 @@ function logColor(type: "info" | "error" | "success") {
   return "#888";
 }
 
+function getProcessingStepLabel(job: { mode: "create" | "format"; progress: number; currentChapter: number }) {
+  if (job.mode === "format") {
+    if (job.progress < 35) return "Parsing source manuscript...";
+    if (job.progress < 75) return "Formatting pages...";
+    return "Final quality pass...";
+  }
+
+  if (job.currentChapter > 0) return `Writing Chapter ${job.currentChapter}...`;
+  if (job.progress < 20) return "Building chapter outline...";
+  return "Preparing manuscript voice...";
+}
+
 export default function BookDetailsPage({ id }: { id: string }) {
   const { jobs, removeJob, stopGeneration, startGeneration, resumeGeneration, updateJob, settings } = useApp();
   const [, setLocation] = useLocation();
@@ -104,6 +116,7 @@ export default function BookDetailsPage({ id }: { id: string }) {
               <div style={{ backgroundColor: border, borderRadius: "4px", height: "6px" }}>
                 <div style={{ backgroundColor: GOLD, height: "6px", borderRadius: "4px", width: `${job.progress}%`, transition: "width 0.5s" }} />
               </div>
+              <p style={{ color: muted, fontSize: "12px", margin: "8px 0 0" }}>{getProcessingStepLabel(job)}</p>
             </div>
           )}
 

@@ -168,6 +168,18 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
+
+  button {
+    transition: box-shadow 140ms ease, transform 120ms ease, filter 140ms ease;
+  }
+
+  button:hover:not(:disabled) {
+    box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.25), 0 0 14px rgba(212, 175, 55, 0.16);
+  }
+
+  button:active:not(:disabled) {
+    transform: scale(0.98);
+  }
 }
 
 ::-webkit-scrollbar {

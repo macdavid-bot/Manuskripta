@@ -15,10 +15,20 @@ function statusColor(status: BookJob["status"]) {
   return "#888";
 }
 
-function statusLabel(status: BookJob["status"]) {
-  if (status === "completed") return "Completed";
-  if (status === "processing") return "Generating...";
-  if (status === "failed") return "Failed";
+function statusLabel(job: BookJob) {
+  if (job.status === "completed") return "Completed";
+  if (job.status === "processing") {
+    if (job.mode === "format") {
+      if (job.progress < 40) return "Parsing manuscript...";
+      if (job.progress < 80) return "Formatting pages...";
+      return "Finalizing export...";
+    }
+
+    if (job.currentChapter > 0) return `Writing Chapter ${job.currentChapter}...`;
+    if (job.progress < 20) return "Planning chapter flow...";
+    return "Preparing manuscript...";
+  }
+  if (job.status === "failed") return "Failed";
   return "Queued";
 }
 
@@ -144,7 +154,7 @@ export default function DashboardPage() {
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
                       <h3 style={{ color: text, fontSize: "16px", fontWeight: "600", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{job.title}</h3>
                       <span style={{ color: statusColor(job.status), backgroundColor: `${statusColor(job.status)}15`, border: `1px solid ${statusColor(job.status)}40`, borderRadius: "20px", padding: "2px 10px", fontSize: "11px", fontWeight: "600", whiteSpace: "nowrap" }}>
-                        {statusLabel(job.status)}
+                        {statusLabel(job)}
                       </span>
                       <span style={{ color: muted, backgroundColor: "#0F0F0F", border: `1px solid ${border}`, borderRadius: "20px", padding: "2px 8px", fontSize: "11px", whiteSpace: "nowrap" }}>
                         {job.mode === "format" ? "Format" : "Generate"}

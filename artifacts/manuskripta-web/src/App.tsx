@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppProvider, useApp } from "@/context/AppContext";
@@ -46,13 +47,32 @@ function OfflineBanner() {
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isLoggedIn, isLoading } = useApp();
   const [, setLocation] = useLocation();
+  const steps = ["Preparing workspace...", "Loading books...", "Syncing your session..."];
+  const [stepIndex, setStepIndex] = useState(0);
+
+  useEffect(() => {
+    if (!isLoading) return;
+    const timer = setInterval(() => {
+      setStepIndex((prev) => (prev + 1) % steps.length);
+    }, 900);
+    return () => clearInterval(timer);
+  }, [isLoading, steps.length]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-[#D4AF37] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-          <p style={{ color: "#888" }} className="text-sm">Loading Manuskripta...</p>
+          <motion.p
+            key={stepIndex}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.18 }}
+            style={{ color: "#888" }}
+            className="text-sm"
+          >
+            {steps[stepIndex]}
+          </motion.p>
         </div>
       </div>
     );
@@ -67,36 +87,48 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 function Router() {
+  const [location] = useLocation();
+
   return (
-    <Switch>
-      <Route path="/login" component={LoginPage} />
-      <Route path="/register" component={RegisterPage} />
-      <Route path="/">
-        {() => <AuthGuard><DashboardPage /></AuthGuard>}
-      </Route>
-      <Route path="/create-book">
-        {() => <AuthGuard><CreateBookPage /></AuthGuard>}
-      </Route>
-      <Route path="/format-book">
-        {() => <AuthGuard><FormatBookPage /></AuthGuard>}
-      </Route>
-      <Route path="/book/:id">
-        {(params) => <AuthGuard><BookDetailsPage id={params.id} /></AuthGuard>}
-      </Route>
-      <Route path="/reader/:id">
-        {(params) => <AuthGuard><ReaderPage id={params.id} /></AuthGuard>}
-      </Route>
-      <Route path="/admin">
-        {() => <AuthGuard><AdminPage /></AuthGuard>}
-      </Route>
-      <Route path="/announcements">
-        {() => <AuthGuard><AnnouncementsPage /></AuthGuard>}
-      </Route>
-      <Route path="/settings">
-        {() => <AuthGuard><SettingsPage /></AuthGuard>}
-      </Route>
-      <Route component={NotFound} />
-    </Switch>
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={location}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -6 }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
+      >
+        <Switch>
+          <Route path="/login" component={LoginPage} />
+          <Route path="/register" component={RegisterPage} />
+          <Route path="/">
+            {() => <AuthGuard><DashboardPage /></AuthGuard>}
+          </Route>
+          <Route path="/create-book">
+            {() => <AuthGuard><CreateBookPage /></AuthGuard>}
+          </Route>
+          <Route path="/format-book">
+            {() => <AuthGuard><FormatBookPage /></AuthGuard>}
+          </Route>
+          <Route path="/book/:id">
+            {(params) => <AuthGuard><BookDetailsPage id={params.id} /></AuthGuard>}
+          </Route>
+          <Route path="/reader/:id">
+            {(params) => <AuthGuard><ReaderPage id={params.id} /></AuthGuard>}
+          </Route>
+          <Route path="/admin">
+            {() => <AuthGuard><AdminPage /></AuthGuard>}
+          </Route>
+          <Route path="/announcements">
+            {() => <AuthGuard><AnnouncementsPage /></AuthGuard>}
+          </Route>
+          <Route path="/settings">
+            {() => <AuthGuard><SettingsPage /></AuthGuard>}
+          </Route>
+          <Route component={NotFound} />
+        </Switch>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
