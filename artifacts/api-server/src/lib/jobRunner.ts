@@ -6,6 +6,7 @@ import type { BookInputs, FormatBookData } from "./ai.js";
 import {
   assembleFinalBook,
   assembleFinalFormattedBook,
+  buildTocEntriesFromTOC,
   calculateWordTargets,
   correctChapterWordCount,
   createBookBlueprint,
@@ -73,6 +74,15 @@ function countWords(text: string): number {
     .length;
 }
 
+function extractChapterSubtitles(markdown: string): string[] {
+  return markdown
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => /^###\s+/.test(l))
+    .map((l) => l.replace(/^###\s+/, "").trim())
+    .filter(Boolean);
+}
+
 /**
  * After each chapter, redistribute the remaining word budget across the
  * remaining chapters so the overall book stays within the total page range.
@@ -119,7 +129,7 @@ export async function startJob(jobId: string) {
 
   const inputs = job.inputs as unknown as BookInputs;
   const resumeIndex = Array.isArray(job.chapterContents)
-    ? job.chapterContents.findIndex((chapter) => !chapter || chapter.length === 0)
+    ? job.chapterContents.findIndex((chapter: string) => !chapter || chapter.length === 0)
     : 0;
 
   if (job.mode === "format") {
@@ -164,6 +174,7 @@ async function runCreate(
     const parsedChapters = parseResult.chapters;
     const totalChapters = parsedChapters.length;
     const tocParsed = parsedChapters.map((c) => c.title);
+    const tocEntries = buildTocEntriesFromTOC(inputs.tableOfContents, parsedChapters);
 
     // ── Validation: refuse to generate on abnormal structure ──
     if (totalChapters === 0) {
@@ -190,12 +201,16 @@ async function runCreate(
     }
 
     await updateJob(jobId, { tocParsed, totalChapters });
-    await log(`Identified ${totalChapters} chapters (parser mode: ${parseResult.mode} — Introduction/Conclusion/front-matter excluded)`, "success");
+    await log(`Identified ${totalChapters} chapters (parser mode: ${parseResult.mode})`, "success");
     for (const ch of parsedChapters) {
       const subInfo = ch.subsections.length > 0
         ? ` — ${ch.subsections.length} subsection(s): ${ch.subsections.join(" | ")}`
         : "";
       await log(`  • ${ch.title}${subInfo}`, "info");
+    }
+    await log(`TOC assembly: ${tocEntries.length} section entries detected`, "info");
+    for (const entry of tocEntries) {
+      await log(`TOC + ${entry.depth === 1 ? "subsection" : "section"}: ${entry.label}`, "info");
     }
 
     const wordTargets = calculateWordTargets(inputs, totalChapters);
@@ -367,7 +382,7 @@ async function runCreate(
     }
 
     await log("Assembling final manuscript...", "info");
-    const markdown = assembleFinalBook(inputs, existingChapters, tocParsed, copyrightText);
+    const markdown = assembleFinalBook(inputs, existingChapters, tocEntries, copyrightText);
     await updateJob(jobId, {
       status: "completed",
       progress: 100,
@@ -463,10 +478,27 @@ async function runFormat(
     }
 
     await log("Assembling final manuscript...", "info");
+    const chapterSubtitles = formattedChapters.map(extractChapterSubtitles);
+    const formatTocEntries = [
+      ...(formatData.dedication ? ["Dedication"] : []),
+      "Introduction",
+      ...formatData.chapters.map((c, i) => c.label || `Chapter ${i + 1}`),
+      "Conclusion",
+      ...(formattedBackMatter ? ["Back Matter"] : []),
+    ];
+    for (const entry of formatTocEntries) {
+      await log(`TOC + section: ${entry}`, "info");
+    }
+    for (const subs of chapterSubtitles) {
+      for (const sub of subs) {
+        await log(`TOC + subsection: ${sub}`, "info");
+      }
+    }
     const markdown = assembleFinalFormattedBook(
       formatData.bookTitle, formatData.copyright, formatData.dedication,
       formattedIntro, formattedChapters, formattedConclusion, formattedBackMatter,
-      formatData.chapters.map((c, i) => c.label || `Chapter ${i + 1}`)
+      formatData.chapters.map((c, i) => c.label || `Chapter ${i + 1}`),
+      chapterSubtitles
     );
     await updateJob(jobId, { status: "completed", progress: 100, markdownContent: markdown, completedAt: Date.now() });
     await log("Book formatting complete!", "success");
