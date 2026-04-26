@@ -10,6 +10,7 @@ export interface UserSettings {
 export interface BookJob {
   id: string;
   title: string;
+  subtitle?: string;
   status: "processing" | "completed" | "failed" | "pending";
   progress: number;
   currentChapter: number;
@@ -38,6 +39,7 @@ export interface HeadingColors {
 
 export interface BookInputs {
   title: string;
+  subtitle?: string;
   tableOfContents: string;
   minPages: number;
   maxPages: number;

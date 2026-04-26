@@ -30,6 +30,7 @@ export const jobsTable = pgTable("msk_jobs", {
     .notNull()
     .references(() => usersTable.email, { onDelete: "cascade" }),
   title: varchar("title", { length: 500 }).notNull(),
+  subtitle: varchar("subtitle", { length: 500 }),
   status: varchar("status", { length: 20 }).notNull().default("pending"),
   progress: integer("progress").default(0).notNull(),
   currentChapter: integer("current_chapter").default(0).notNull(),
