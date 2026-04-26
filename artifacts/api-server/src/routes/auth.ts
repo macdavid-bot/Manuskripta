@@ -58,7 +58,7 @@ router.post("/register", async (req, res) => {
     const { passwordHash: _, ...safeUser } = user[0];
     res.json({ token, user: safeUser });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 
@@ -134,7 +134,7 @@ router.post("/login", async (req, res) => {
     const { passwordHash: _, ...safeUser } = userToReturn;
     res.json({ token, user: safeUser });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 
@@ -222,7 +222,7 @@ router.post("/google-login", async (req, res) => {
     const { passwordHash: _, ...safeUser } = userToReturn;
     res.json({ token, user: safeUser });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 
@@ -234,17 +234,21 @@ router.post("/logout", requireAuth, async (req: AuthRequest, res) => {
     }
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 
 // ─── Me ────────────────────────────────────────────────────────────────────
 router.get("/me", requireAuth, async (req: AuthRequest, res) => {
-  const { passwordHash: _, ...safeUser } = req.user!;
-  const user = req.user!.isAdmin
-    ? { ...safeUser, isAdmin: true, isApproved: true, maxBooksPerMonth: 999999 }
-    : safeUser;
-  res.json({ user });
+  try {
+    const { passwordHash: _, ...safeUser } = req.user!;
+    const user = req.user!.isAdmin
+      ? { ...safeUser, isAdmin: true, isApproved: true, maxBooksPerMonth: 999999 }
+      : safeUser;
+    res.json({ user });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
+  }
 });
 
 export default router;

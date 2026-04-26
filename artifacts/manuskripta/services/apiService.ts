@@ -29,8 +29,13 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
   const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
-    const body = await res.json().catch(() => ({ error: "Request failed" }));
-    throw new Error((body as { error?: string }).error ?? `HTTP ${res.status}`);
+    const contentType = res.headers.get("content-type") ?? "";
+    if (contentType.includes("application/json")) {
+      const body = await res.json().catch(() => ({ error: "" }));
+      throw new Error((body as { error?: string }).error || `HTTP ${res.status}`);
+    }
+    const text = (await res.text().catch(() => "")).trim();
+    throw new Error(text || `HTTP ${res.status}`);
   }
   return res.json() as Promise<T>;
 }

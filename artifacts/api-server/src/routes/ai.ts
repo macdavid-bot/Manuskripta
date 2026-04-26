@@ -42,7 +42,7 @@ router.post("/complete", requireAuth, async (req, res) => {
     const data = await upstream.json();
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 

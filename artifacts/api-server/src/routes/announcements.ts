@@ -14,7 +14,7 @@ router.get("/", requireAuth, async (_req, res) => {
       .orderBy(desc(announcementsTable.createdAt));
     res.json({ announcements });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 
@@ -32,7 +32,7 @@ router.post("/", requireAuth, requireAdmin, async (_req: AuthRequest, res) => {
       .returning();
     res.json({ announcement: ann[0] });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 
@@ -43,7 +43,7 @@ router.delete("/:id", requireAuth, requireAdmin, async (req, res) => {
       .where(eq(announcementsTable.id, req.params.id));
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 

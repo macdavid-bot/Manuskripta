@@ -41,9 +41,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   if (!res.ok) {
     if (contentType.includes("application/json")) {
       const body = (await res.json().catch(() => ({}))) as { error?: string };
-      throw new ApiError(body.error ?? `HTTP ${res.status}`, res.status);
+      throw new ApiError(body.error || `HTTP ${res.status}`, res.status);
     }
-    throw new ApiError(`HTTP ${res.status}`, res.status);
+    const text = (await res.text().catch(() => "")).trim();
+    throw new ApiError(text || `HTTP ${res.status}`, res.status);
   }
   if (!contentType.includes("application/json")) {
     throw new Error("Server returned non-JSON response");
