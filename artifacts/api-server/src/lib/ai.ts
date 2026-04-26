@@ -8,6 +8,7 @@ export interface BookInputs {
   maxPages: number;
   tones: string[];
   allowStorytelling: boolean;
+  headingCapitalization?: "uppercase" | "titlecase" | "lowercase";
   pageSize: string;
   copyrightOption: "generate" | "insert" | "default";
   copyrightText?: string;
@@ -15,6 +16,29 @@ export interface BookInputs {
   memoryBank?: string;
   mode: "create" | "format";
   formatData?: FormatBookData;
+}
+
+function toTitleCase(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/\b([a-z])/g, (m) => m.toUpperCase());
+}
+
+function applyHeadingCapitalization(text: string, mode: "uppercase" | "titlecase" | "lowercase" = "titlecase"): string {
+  const normalize = (value: string) => {
+    if (mode === "uppercase") return value.toUpperCase();
+    if (mode === "lowercase") return value.toLowerCase();
+    return toTitleCase(value);
+  };
+
+  return text.replace(/^(#{1,4}\s+)(.+)$/gm, (_match, prefix: string, heading: string) => `${prefix}${normalize(heading)}`);
+}
+
+function getHeadingCapitalizationRule(inputs: BookInputs): string {
+  const mode = inputs.headingCapitalization ?? "titlecase";
+  if (mode === "uppercase") return "Use UPPERCASE for ALL headings (##, ###, ####).";
+  if (mode === "lowercase") return "Use lowercase for ALL headings (##, ###, ####).";
+  return "Use Title Case for ALL headings (##, ###, ####).";
 }
 
 function getPromptTitle(inputs: BookInputs): string {
@@ -566,6 +590,9 @@ DETECTION RULE:
   → If it represents a focused topic or drill-down within a section → use #### (chapter focus)
 - Never turn a sub-chapter or chapter focus into a standalone chapter
 
+HEADING CAPITALIZATION RULE (MANDATORY)
+- ${getHeadingCapitalizationRule(inputs)}
+
 -----------------------------------
 ABSOLUTE PROHIBITIONS (NON-NEGOTIABLE)
 -----------------------------------
@@ -853,6 +880,7 @@ ${inputs.tableOfContents}
 
 Tone(s): ${tones}
 Storytelling: ${inputs.allowStorytelling ? "Enabled" : "Disabled"}
+Heading capitalization: ${inputs.headingCapitalization ?? "titlecase"}
 Page Size: ${inputs.pageSize}
 Page Count Range: ${inputs.minPages}–${inputs.maxPages} pages
 ⚠️ MANDATORY WORD COUNT FOR THIS CHAPTER: ${minWords}–${maxWords} words
@@ -964,7 +992,7 @@ export function assembleFinalBook(
   book += `## Copyright\n\n${copyrightText}\n\n`;
   book += `## Table of Contents\n\n${tocEntries.join("\n")}\n\n`;
   book += chapters.map(cleanChapterContent).join("\n\n");
-  return book;
+  return applyHeadingCapitalization(book, inputs.headingCapitalization ?? "titlecase");
 }
 
 export async function formatSection(
@@ -1011,7 +1039,8 @@ export function assembleFinalFormattedBook(
   formattedConclusion: string,
   formattedBackMatter: string | undefined,
   chapterLabels: string[],
-  chapterSubtitles: string[][]
+  chapterSubtitles: string[][],
+  headingCapitalization: "uppercase" | "titlecase" | "lowercase" = "titlecase"
 ): string {
   const tocEntries: string[] = [];
   let idx = 1;
@@ -1043,5 +1072,5 @@ export function assembleFinalFormattedBook(
   book += formattedChapters.map(cleanChapterContent).join("\n\n");
   book += `\n\n${cleanChapterContent(formattedConclusion)}`;
   if (formattedBackMatter) book += `\n\n${cleanChapterContent(formattedBackMatter)}`;
-  return book;
+  return applyHeadingCapitalization(book, headingCapitalization);
 }

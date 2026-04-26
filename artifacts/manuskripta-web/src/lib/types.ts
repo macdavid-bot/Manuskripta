@@ -37,6 +37,8 @@ export interface HeadingColors {
   h4: string;
 }
 
+export type HeadingCapitalization = "uppercase" | "titlecase" | "lowercase";
+
 export interface BookInputs {
   title: string;
   subtitle?: string;
@@ -50,6 +52,7 @@ export interface BookInputs {
   customHeight?: number;
   useHeadingColor: boolean;
   headingColors?: HeadingColors;
+  headingCapitalization: HeadingCapitalization;
   copyrightOption: "generate" | "insert" | "default";
   copyrightText?: string;
   authorName?: string;
