@@ -1,6 +1,6 @@
 import { db } from "@workspace/db";
-import { jobsTable } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import { jobsTable, usersTable } from "@workspace/db/schema";
+import { and, eq, ne, sql } from "drizzle-orm";
 import { logger } from "./logger.js";
 import type { BookInputs, FormatBookData } from "./ai.js";
 import {
@@ -46,6 +46,32 @@ async function updateJob(jobId: string, updates: Partial<typeof jobsTable.$infer
     await db.update(jobsTable).set(updates).where(eq(jobsTable.id, jobId));
   } catch (err) {
     logger.error({ err }, "Failed to update job in DB");
+  }
+}
+
+async function completeJobAndIncrementUser(
+  jobId: string,
+  userEmail: string,
+  updates: Pick<typeof jobsTable.$inferInsert, "progress" | "markdownContent" | "completedAt">
+) {
+  try {
+    await db.transaction(async (tx) => {
+      const transitioned = await tx
+        .update(jobsTable)
+        .set({ status: "completed", ...updates })
+        .where(and(eq(jobsTable.id, jobId), ne(jobsTable.status, "completed")))
+        .returning({ id: jobsTable.id });
+
+      // Increment usage only when this job transitions to completed for the first time.
+      if (transitioned.length > 0) {
+        await tx
+          .update(usersTable)
+          .set({ booksGenerated: sql`${usersTable.booksGenerated} + 1` })
+          .where(eq(usersTable.email, userEmail));
+      }
+    });
+  } catch (err) {
+    logger.error({ err, jobId, userEmail }, "Failed to finalize completed job and increment usage");
   }
 }
 
@@ -383,8 +409,7 @@ async function runCreate(
 
     await log("Assembling final manuscript...", "info");
     const markdown = assembleFinalBook(inputs, existingChapters, tocEntries, copyrightText);
-    await updateJob(jobId, {
-      status: "completed",
+    await completeJobAndIncrementUser(jobId, job.userEmail, {
       progress: 100,
       markdownContent: markdown,
       completedAt: Date.now(),
@@ -500,7 +525,7 @@ async function runFormat(
       formatData.chapters.map((c, i) => c.label || `Chapter ${i + 1}`),
       chapterSubtitles
     );
-    await updateJob(jobId, { status: "completed", progress: 100, markdownContent: markdown, completedAt: Date.now() });
+    await completeJobAndIncrementUser(jobId, job.userEmail, { progress: 100, markdownContent: markdown, completedAt: Date.now() });
     await log("Book formatting complete!", "success");
   } catch (err) {
     const message = (err as Error).message;

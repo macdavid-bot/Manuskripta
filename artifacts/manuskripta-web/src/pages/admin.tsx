@@ -36,6 +36,14 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+function formatInputValue(value: unknown): string {
+  if (value == null) return "—";
+  if (typeof value === "string") return value.trim() ? value : "—";
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (Array.isArray(value)) return value.length === 0 ? "[]" : value.map((v) => formatInputValue(v)).join(", ");
+  return JSON.stringify(value, null, 2);
+}
+
 function UserCard({
   u, onApprove, onReject, onPend, onEditLimit,
   editingLimit, setEditMaxBooks, editMaxBooks, onSaveLimit, onCancelEdit, colors,
@@ -135,6 +143,7 @@ export default function AdminPage() {
 
   const [allServerJobs, setAllServerJobs] = useState<BookJob[]>([]);
   const [loadingAllJobs, setLoadingAllJobs] = useState(false);
+  const [expandedLiveJob, setExpandedLiveJob] = useState<string | null>(null);
 
   const colors = themeColors(settings.theme);
   const { bg, card, border, text, muted, inputBg } = colors;
@@ -405,9 +414,13 @@ export default function AdminPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 {allServerJobs.sort((a, b) => { const o = { processing: 0, pending: 1, failed: 2, completed: 3 }; return (o[a.status] ?? 4) - (o[b.status] ?? 4); }).map((job) => {
                   const jobUser = getJobUser(job.userEmail ?? "");
+                  const inputEntries = Object.entries((job.inputs ?? {}) as Record<string, unknown>);
                   return (
                     <div key={job.id} style={{ backgroundColor: card, border: `1px solid ${job.status === "processing" ? "rgba(212,175,55,0.25)" : border}`, borderRadius: "8px", padding: "14px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "8px" }}>
+                      <div
+                        style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "8px", cursor: "pointer" }}
+                        onClick={() => setExpandedLiveJob(expandedLiveJob === job.id ? null : job.id)}
+                      >
                         <div style={{ flex: 1 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px", flexWrap: "wrap" }}>
                             <span style={{ color: text, fontSize: "14px", fontWeight: "500" }}>{job.title}</span>
@@ -427,10 +440,37 @@ export default function AdminPage() {
                             </div>
                           )}
                         </div>
+                        <span style={{ color: muted, fontSize: "18px", lineHeight: 1 }}>{expandedLiveJob === job.id ? "▲" : "▼"}</span>
                         {(job.status === "processing" || job.status === "pending") && (
-                          <button onClick={() => handleStopJob(job.id)} style={{ backgroundColor: "transparent", border: "1px solid rgba(244,67,54,0.4)", color: "#f44336", padding: "5px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}>Stop</button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleStopJob(job.id); }}
+                            style={{ backgroundColor: "transparent", border: "1px solid rgba(244,67,54,0.4)", color: "#f44336", padding: "5px 12px", borderRadius: "6px", cursor: "pointer", fontSize: "12px" }}
+                          >
+                            Stop
+                          </button>
                         )}
                       </div>
+                      {expandedLiveJob === job.id && (
+                        <div style={{ marginTop: "12px", borderTop: `1px solid ${border}`, paddingTop: "12px" }}>
+                          <p style={{ color: muted, fontSize: "11px", fontWeight: "600", letterSpacing: "0.05em", textTransform: "uppercase", margin: "0 0 8px" }}>
+                            User-selected options
+                          </p>
+                          {inputEntries.length === 0 ? (
+                            <p style={{ color: muted, fontSize: "12px", margin: 0 }}>No recorded inputs.</p>
+                          ) : (
+                            <div style={{ display: "grid", gap: "6px" }}>
+                              {inputEntries.map(([key, value]) => (
+                                <div key={key} style={{ backgroundColor: inputBg, border: `1px solid ${border}`, borderRadius: "6px", padding: "8px 10px" }}>
+                                  <p style={{ color: text, fontSize: "11px", fontWeight: "600", margin: "0 0 4px" }}>{key}</p>
+                                  <pre style={{ color: muted, fontSize: "11px", margin: 0, whiteSpace: "pre-wrap", overflowX: "auto" }}>
+                                    {formatInputValue(value)}
+                                  </pre>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
