@@ -107,6 +107,11 @@ export interface ParseResult {
   mode: "strict" | "flex" | "json";
   warnings: string[];
 }
+export interface TocEntry {
+  label: string;
+  anchorSource: string;
+  depth: 0 | 1;
+}
 
 type Extractor = (m: RegExpMatchArray, counter: number) => { declared: number; bareTitle: string };
 
@@ -258,6 +263,43 @@ export function identifyChapters(toc: string): string[] {
 /** @deprecated Use parseTOCStrict() instead. Kept for callers that import it. */
 export function parseTOC(toc: string): string[] {
   return identifyChapters(toc);
+}
+
+export function buildTocEntriesFromTOC(toc: string, parsedChapters: ParsedChapter[]): TocEntry[] {
+  const rawLines = toc.split(/\r?\n/);
+  const entries: TocEntry[] = [];
+  let chapterIdx = -1;
+  const skippedStandalone = /^(table of contents|contents)$/i;
+
+  for (const raw of rawLines) {
+    const line = cleanTocLine(raw);
+    if (!line) continue;
+
+    const chapterMatch = line.match(STRICT_CHAPTER_PATTERN) ?? line.match(FLEX_CHAPTER_PATTERN);
+    if (chapterMatch) {
+      chapterIdx += 1;
+      const chapter = parsedChapters[chapterIdx];
+      if (!chapter) continue;
+      entries.push({ label: chapter.title, anchorSource: chapter.title, depth: 0 });
+      for (const sub of chapter.subsections) {
+        entries.push({ label: sub, anchorSource: chapter.title, depth: 1 });
+      }
+      continue;
+    }
+
+    if (NON_CHAPTER_PATTERN.test(line) && !skippedStandalone.test(line)) {
+      entries.push({ label: line, anchorSource: line, depth: 0 });
+    }
+  }
+
+  // De-duplicate while preserving order
+  const seen = new Set<string>();
+  return entries.filter((e) => {
+    const key = `${e.depth}:${e.label.toLowerCase()}:${e.anchorSource.toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 // Convert a heading string to a Markdown-compatible anchor ID
@@ -870,15 +912,14 @@ Include: copyright year (${new Date().getFullYear()}), rights reserved statement
 export function assembleFinalBook(
   inputs: BookInputs,
   chapters: string[],
-  tocParsed: string[],
+  tocEntriesInput: TocEntry[],
   copyrightText: string
 ): string {
-  // Ensure every entry has "Chapter N:" prefix for the clickable ToC
-  const tocEntries = tocParsed.map((ch, i) => {
-    const bare = ch.replace(/^chapter\s+\d+[:\s-]*/i, "").trim();
-    const numbered = `Chapter ${i + 1}: ${bare}`;
-    const anchor = headingToAnchor(numbered);
-    return `${i + 1}. [${numbered}](#${anchor})`;
+  const tocEntries = tocEntriesInput.map((entry, i) => {
+    const anchor = headingToAnchor(entry.anchorSource);
+    const index = `${i + 1}.`;
+    if (entry.depth === 1) return `   ${index} ${entry.label}`;
+    return `${index} [${entry.label}](#${anchor})`;
   });
 
   let book = `# ${inputs.title}\n\n`;
@@ -931,14 +972,30 @@ export function assembleFinalFormattedBook(
   formattedChapters: string[],
   formattedConclusion: string,
   formattedBackMatter: string | undefined,
-  chapterLabels: string[]
+  chapterLabels: string[],
+  chapterSubtitles: string[][]
 ): string {
-  const tocEntries = chapterLabels.map((label, i) => {
-    const bare = label.replace(/^chapter\s+\d+[:\s-]*/i, "").trim();
-    const numbered = `Chapter ${i + 1}: ${bare}`;
-    const anchor = headingToAnchor(numbered);
-    return `${i + 1}. [${numbered}](#${anchor})`;
+  const tocEntries: string[] = [];
+  let idx = 1;
+  if (dedication) {
+    tocEntries.push(`${idx}. [Dedication](#${headingToAnchor("Dedication")})`);
+    idx += 1;
+  }
+  tocEntries.push(`${idx}. [Introduction](#${headingToAnchor("Introduction")})`);
+  idx += 1;
+
+  chapterLabels.forEach((label, i) => {
+    tocEntries.push(`${idx}. [${label}](#${headingToAnchor(label)})`);
+    idx += 1;
+    for (const sub of chapterSubtitles[i] ?? []) {
+      tocEntries.push(`   ${idx}. ${sub}`);
+      idx += 1;
+    }
   });
+
+  tocEntries.push(`${idx}. [Conclusion](#${headingToAnchor("Conclusion")})`);
+  idx += 1;
+  if (formattedBackMatter) tocEntries.push(`${idx}. [Back Matter](#${headingToAnchor("Back Matter")})`);
 
   let book = `# ${bookTitle}\n\n`;
   book += `## Copyright\n\n${copyright}\n\n`;
