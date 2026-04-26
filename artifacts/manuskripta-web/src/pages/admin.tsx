@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
+import { animate, useMotionValue, useTransform, motion } from "framer-motion";
 import { useApp } from "@/context/AppContext";
 import { NavBar } from "./dashboard";
 import { jobsApi, usersApi } from "@/lib/api";
@@ -34,6 +35,23 @@ function StatusBadge({ status }: { status: string }) {
       {status}
     </span>
   );
+}
+
+function CountUp({ value, color = "inherit" }: { value: number; color?: string }) {
+  const motionValue = useMotionValue(0);
+  const rounded = useTransform(motionValue, (latest) => Math.round(latest));
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    const controls = animate(motionValue, value, { duration: 0.45, ease: "easeOut" });
+    const unsub = rounded.on("change", (latest) => setDisplay(latest));
+    return () => {
+      controls.stop();
+      unsub();
+    };
+  }, [motionValue, rounded, value]);
+
+  return <span style={{ color }}>{display.toLocaleString()}</span>;
 }
 
 function UserCard({
@@ -261,6 +279,26 @@ export default function AdminPage() {
               <button key={key} onClick={() => setTab(key)} style={tabStyle(tab === key)}>{label}</button>
             ))}
           </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "10px", marginBottom: "16px" }}>
+          {[
+            { label: "Members", value: nonAdminUsers.length, color: text },
+            { label: "Approved", value: approvedUsers.length, color: GREEN },
+            { label: "Pending", value: pendingUsers.length, color: GOLD },
+            { label: "Live Jobs", value: activeJobsGlobal.length, color: muted },
+          ].map((metric) => (
+            <motion.div
+              key={metric.label}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+              style={{ backgroundColor: card, border: `1px solid ${border}`, borderRadius: "10px", padding: "12px 14px" }}
+            >
+              <p style={{ color: muted, fontSize: "11px", margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{metric.label}</p>
+              <p style={{ color: metric.color, fontSize: "22px", fontWeight: 600, margin: 0 }}><CountUp value={metric.value} color={metric.color} /></p>
+            </motion.div>
+          ))}
         </div>
 
         {msg && (

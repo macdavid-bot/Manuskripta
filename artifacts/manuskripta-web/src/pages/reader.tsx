@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { AnimatePresence, motion } from "framer-motion";
 import { useApp } from "@/context/AppContext";
 import { NavBar } from "./dashboard";
 import { exportToPDF, exportToDocx } from "@/lib/pdfExport";
@@ -162,11 +163,18 @@ export default function ReaderPage({ id }: { id: string }) {
               </div>
             </div>
 
-            <div
-              style={{ fontFamily: "Georgia, serif", color: text }}
-              onClick={handleContentClick}
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(chapter.content, theme) }}
-            />
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={chapter.anchor}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                style={{ fontFamily: "Georgia, serif", color: text }}
+                onClick={handleContentClick}
+                dangerouslySetInnerHTML={{ __html: renderMarkdown(chapter.content, theme) }}
+              />
+            </AnimatePresence>
 
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: "40px", paddingTop: "20px", borderTop: `1px solid ${border}` }}>
               <button onClick={() => { setCurrentChapter(Math.max(0, currentChapter - 1)); window.scrollTo(0, 0); }} disabled={currentChapter === 0} style={{ color: currentChapter === 0 ? "#444" : GOLD, background: "none", border: "none", cursor: currentChapter === 0 ? "not-allowed" : "pointer", fontSize: "13px" }}>← Previous Chapter</button>
