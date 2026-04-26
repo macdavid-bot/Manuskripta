@@ -9,12 +9,41 @@ export interface BookInputs {
   tones: string[];
   allowStorytelling: boolean;
   pageSize: string;
+  fontSettings?: FontSettings;
   copyrightOption: "generate" | "insert" | "default";
   copyrightText?: string;
   additionalPrompt?: string;
   memoryBank?: string;
   mode: "create" | "format";
   formatData?: FormatBookData;
+}
+
+export interface FontStyleSetting {
+  family: string;
+  size: number;
+}
+
+export interface FontSettings {
+  title: FontStyleSetting;
+  subtitle: FontStyleSetting;
+  h1: FontStyleSetting;
+  h2: FontStyleSetting;
+  h3: FontStyleSetting;
+  h4: FontStyleSetting;
+  body: FontStyleSetting;
+}
+
+function formatFontSettings(fontSettings?: FontSettings): string {
+  if (!fontSettings) return "Default typography";
+  return [
+    `Title: ${fontSettings.title.family} ${fontSettings.title.size}px`,
+    `Subtitle: ${fontSettings.subtitle.family} ${fontSettings.subtitle.size}px`,
+    `H1: ${fontSettings.h1.family} ${fontSettings.h1.size}px`,
+    `H2: ${fontSettings.h2.family} ${fontSettings.h2.size}px`,
+    `H3: ${fontSettings.h3.family} ${fontSettings.h3.size}px`,
+    `H4: ${fontSettings.h4.family} ${fontSettings.h4.size}px`,
+    `Body: ${fontSettings.body.family} ${fontSettings.body.size}px`,
+  ].join(" | ");
 }
 
 function getPromptTitle(inputs: BookInputs): string {
@@ -432,6 +461,7 @@ Title: "${getPromptTitle(inputs)}"
 Table of Contents: ${inputs.tableOfContents}
 Tone(s): ${tones}
 Storytelling: ${inputs.allowStorytelling ? "Enabled" : "Disabled"}
+Typography: ${formatFontSettings(inputs.fontSettings)}
 ${inputs.additionalPrompt ? `Additional Direction: ${inputs.additionalPrompt}` : ""}
 ${inputs.memoryBank ? `Author Memory Bank: ${inputs.memoryBank}` : ""}
 
@@ -492,6 +522,7 @@ Every time the API is called to generate a book, the system MUST send:
    - Selected Tone(s)
    - Storytelling setting
    - Page size
+   - Typography settings (font + size for title, subtitle, headings, and body)
    - Copyright option
    - Additional Prompt (if provided)
 3. The user's Memory Bank (if available)
@@ -854,6 +885,7 @@ ${inputs.tableOfContents}
 Tone(s): ${tones}
 Storytelling: ${inputs.allowStorytelling ? "Enabled" : "Disabled"}
 Page Size: ${inputs.pageSize}
+Typography: ${formatFontSettings(inputs.fontSettings)}
 Page Count Range: ${inputs.minPages}–${inputs.maxPages} pages
 ⚠️ MANDATORY WORD COUNT FOR THIS CHAPTER: ${minWords}–${maxWords} words
    You MUST write between ${minWords} and ${maxWords} words for THIS chapter.

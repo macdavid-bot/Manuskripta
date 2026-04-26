@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useApp } from "@/context/AppContext";
-import type { BookJob, BookInputs, HeadingColors } from "@/lib/types";
+import type { BookJob, BookInputs, HeadingColors, FontSettings } from "@/lib/types";
 
 const GOLD = "#D4AF37";
 const BG = "#000000";
@@ -10,6 +10,38 @@ const BORDER = "#1A1A1A";
 
 const PAGE_SIZES = ["5 x 8 in", "5.25 x 8 in", "5.5 x 8.5 in", "5.06 x 7.81 in", "6 x 9 in", "6.14 x 9.21 in", "6.69 x 9.61 in", "7 x 10 in", "8 x 10 in", "8.5 x 11 in", "Custom Size"];
 const AVAILABLE_TONES = ["Professional", "Academic", "Conversational", "Inspirational", "Authoritative", "Empathetic", "Humorous", "Storytelling", "Technical", "Philosophical", "Motivational", "Research-Based", "Practical", "Reflective"];
+const COMMON_FONTS = [
+  "Times New Roman",
+  "Aptos",
+  "Arial",
+  "Calibri",
+  "Cambria",
+  "Georgia",
+  "Garamond",
+  "Helvetica",
+  "Verdana",
+  "Trebuchet MS",
+  "Tahoma",
+  "Palatino",
+  "Book Antiqua",
+  "Baskerville",
+  "Didot",
+  "Optima",
+  "Futura",
+  "Gill Sans",
+  "Century Gothic",
+  "Franklin Gothic",
+  "Segoe UI",
+  "Roboto",
+  "Open Sans",
+  "Lato",
+  "Merriweather",
+  "Montserrat",
+  "Source Sans Pro",
+  "Nunito",
+  "Inter",
+  "Courier New",
+];
 
 const PALETTE = [
   { name: "Jet Black", hex: "#111111" },
@@ -34,6 +66,16 @@ const DEFAULT_HEADING_COLORS: HeadingColors = {
   h2: "#1D4ED8",
   h3: "#0D9488",
   h4: "#64748B",
+};
+
+const DEFAULT_FONT_SETTINGS: FontSettings = {
+  title: { family: "Times New Roman", size: 32 },
+  subtitle: { family: "Georgia", size: 20 },
+  h1: { family: "Times New Roman", size: 24 },
+  h2: { family: "Times New Roman", size: 20 },
+  h3: { family: "Times New Roman", size: 18 },
+  h4: { family: "Times New Roman", size: 16 },
+  body: { family: "Garamond", size: 12 },
 };
 
 function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
@@ -76,6 +118,7 @@ export default function CreateBookPage() {
   const [pageSize, setPageSize] = useState("6 x 9 in");
   const [useHeadingColor, setUseHeadingColor] = useState(false);
   const [headingColors, setHeadingColors] = useState<HeadingColors>(DEFAULT_HEADING_COLORS);
+  const [fontSettings, setFontSettings] = useState<FontSettings>(DEFAULT_FONT_SETTINGS);
   const [copyrightOption, setCopyrightOption] = useState<"generate" | "insert" | "default">("generate");
   const [copyrightText, setCopyrightText] = useState("");
   const [additionalPrompt, setAdditionalPrompt] = useState("");
@@ -119,6 +162,7 @@ export default function CreateBookPage() {
       tones,
       allowStorytelling,
       pageSize,
+      fontSettings,
       useHeadingColor,
       headingColors: useHeadingColor ? headingColors : undefined,
       copyrightOption,
@@ -202,6 +246,51 @@ export default function CreateBookPage() {
             <select value={pageSize} onChange={(e) => setPageSize(e.target.value)} style={{ ...inputStyle, backgroundColor: fieldBg, color: text, border: `1px solid ${border}`, cursor: "pointer" }}>
               {PAGE_SIZES.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
+          </Field>
+          <Field label="Font Selection" hint="Choose one font family and font size for each text category.">
+            <div style={{ backgroundColor: fieldBg, border: `1px solid ${border}`, borderRadius: "8px", padding: "14px" }}>
+              {(["title", "subtitle", "h1", "h2", "h3", "h4", "body"] as const).map((category) => {
+                const labels: Record<string, string> = {
+                  title: "Title",
+                  subtitle: "Subtitle",
+                  h1: "Heading H1",
+                  h2: "Heading H2",
+                  h3: "Heading H3",
+                  h4: "Heading H4",
+                  body: "Body Text",
+                };
+                return (
+                  <div key={category} style={{ display: "grid", gridTemplateColumns: "160px 1fr 120px", gap: "10px", alignItems: "center", marginBottom: category === "body" ? 0 : "10px" }}>
+                    <span style={{ color: text, fontSize: "13px" }}>{labels[category]}</span>
+                    <select
+                      value={fontSettings[category].family}
+                      onChange={(e) =>
+                        setFontSettings((prev) => ({
+                          ...prev,
+                          [category]: { ...prev[category], family: e.target.value },
+                        }))
+                      }
+                      style={{ ...inputStyle, backgroundColor: fieldBg, color: text, border: `1px solid ${border}`, cursor: "pointer", padding: "8px 12px" }}
+                    >
+                      {COMMON_FONTS.map((font) => <option key={font} value={font}>{font}</option>)}
+                    </select>
+                    <input
+                      type="number"
+                      min={8}
+                      max={96}
+                      value={fontSettings[category].size}
+                      onChange={(e) =>
+                        setFontSettings((prev) => ({
+                          ...prev,
+                          [category]: { ...prev[category], size: Number(e.target.value) || 8 },
+                        }))
+                      }
+                      style={{ ...inputStyle, backgroundColor: fieldBg, color: text, border: `1px solid ${border}`, padding: "8px 12px" }}
+                    />
+                  </div>
+                );
+              })}
+            </div>
           </Field>
           <Field label="Copyright">
             <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "10px" }}>
