@@ -246,6 +246,24 @@ Content (first 1000 chars): ${chapterContent.substring(0, 1000)}`;
 }
 
 export async function generateCopyright(inputs: BookInputs): Promise<string> {
+  const minimumWords = 60;
+  const maxAttempts = 3;
+
+  const isCopyrightComplete = (text: string): boolean => {
+    const normalized = text.replace(/\s+/g, " ").trim();
+    if (!normalized) return false;
+
+    const wordCount = normalized.split(/\s+/).filter(Boolean).length;
+    if (wordCount < minimumWords) return false;
+
+    const hasYear = new RegExp(String(new Date().getFullYear())).test(normalized);
+    const hasRightsReserved = /all rights reserved/i.test(normalized);
+    const hasDisclaimer = /(disclaimer|liable|liability|for informational purposes)/i.test(normalized);
+    const hasReuseNote = /(similar books|same author|other works)/i.test(normalized);
+
+    return hasYear && hasRightsReserved && hasDisclaimer && hasReuseNote;
+  };
+
   const authorLine = inputs.authorName ? `\nAuthor: "${inputs.authorName}"` : "";
   const authorInstruction = inputs.authorName
     ? `Use "${inputs.authorName}" as the copyright holder / author name.`
@@ -254,9 +272,23 @@ export async function generateCopyright(inputs: BookInputs): Promise<string> {
   const prompt = `Generate a professional copyright page text for:
 Title: "${inputs.title}"${authorLine}
 
-Include: copyright year (${new Date().getFullYear()}), the author/holder name, rights reserved statement, disclaimer, and a note that it can be used for similar books by the same author. ${authorInstruction} Keep it concise and professional.`;
+Include: copyright year (${new Date().getFullYear()}), the author/holder name, rights reserved statement, disclaimer, and a note that it can be used for similar books by the same author.
+NEVER truncate, abbreviate, or cut off the copyright text. Return the full, complete copyright section only.
+The section must be fully complete and at least ${minimumWords} words. ${authorInstruction} Keep it concise and professional.`;
 
-  return await callAI([{ role: "user", content: prompt }], 300);
+  let bestAttempt = "";
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const response = await callAI([{ role: "user", content: prompt }], 450);
+    const cleaned = response.trim();
+    if (cleaned.length > bestAttempt.length) bestAttempt = cleaned;
+    if (isCopyrightComplete(cleaned)) {
+      return cleaned;
+    }
+  }
+
+  throw new Error(
+    `Failed to generate a complete copyright section after ${maxAttempts} attempts. Last output length: ${bestAttempt.length} chars.`
+  );
 }
 
 export async function assembleFinalBook(
