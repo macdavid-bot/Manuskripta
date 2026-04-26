@@ -13,7 +13,7 @@ router.get("/", requireAuth, requireAdmin, async (_req, res) => {
     const safe = users.map(({ passwordHash: _, ...u }) => u);
     res.json({ users: safe });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 
@@ -27,7 +27,7 @@ router.get("/:email/jobs", requireAuth, requireAdmin, async (req, res) => {
       .where(eq(jobsTable.userEmail, email));
     res.json({ jobs });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 
@@ -52,7 +52,7 @@ router.put("/:email", requireAuth, requireAdmin, async (req: AuthRequest, res) =
     const { passwordHash: _, ...safe } = updated[0];
     res.json({ user: safe });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 

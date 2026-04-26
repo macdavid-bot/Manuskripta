@@ -86,25 +86,33 @@ async function generatePDF(filePath: string, html: string) {
 
 // 🔥 Background generation trigger
 router.post("/export/pdf/background", async (req, res) => {
-  const { title, markdown, id, author } = req.body;
-  const filePath = path.join(PDF_DIR, `${id}.pdf`);
+  try {
+    const { title, markdown, id, author } = req.body;
+    const filePath = path.join(PDF_DIR, `${id}.pdf`);
 
-  enqueuePDFJob(async () => {
-    const html = buildHTML(title, markdown, author);
-    await generatePDF(filePath, html);
-  });
+    enqueuePDFJob(async () => {
+      const html = buildHTML(title, markdown, author);
+      await generatePDF(filePath, html);
+    });
 
-  res.json({ status: "queued" });
+    res.json({ status: "queued" });
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
+  }
 });
 
 // ⚡ Instant download endpoint
 router.get("/export/pdf/:id", (req, res) => {
-  const filePath = path.join(PDF_DIR, `${req.params.id}.pdf`);
+  try {
+    const filePath = path.join(PDF_DIR, `${req.params.id}.pdf`);
 
-  if (fs.existsSync(filePath)) {
-    res.download(filePath);
-  } else {
-    res.status(404).send("PDF not ready");
+    if (fs.existsSync(filePath)) {
+      res.download(filePath);
+    } else {
+      res.status(404).send("PDF not ready");
+    }
+  } catch (err) {
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 

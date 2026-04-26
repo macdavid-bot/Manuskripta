@@ -12,7 +12,7 @@ router.get("/all", requireAuth, requireAdmin, async (_req, res) => {
     const jobs = await db.select().from(jobsTable).orderBy(desc(jobsTable.createdAt));
     res.json({ jobs });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 
@@ -25,7 +25,7 @@ router.get("/", requireAuth, async (req: AuthRequest, res) => {
       .orderBy(desc(jobsTable.createdAt));
     res.json({ jobs });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 
@@ -45,7 +45,7 @@ router.post("/", requireAuth, async (req: AuthRequest, res) => {
       .returning();
     res.json({ job: job[0] });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 
@@ -99,7 +99,7 @@ router.post("/start/:id", requireAuth, async (req: AuthRequest, res) => {
 
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 
@@ -113,7 +113,7 @@ router.post("/stop/:id", requireAuth, async (req: AuthRequest, res) => {
       .where(eq(jobsTable.id, id));
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 
@@ -143,7 +143,7 @@ router.put("/:id", requireAuth, async (req: AuthRequest, res) => {
     }
     res.json({ job: updated[0] });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 
@@ -156,7 +156,7 @@ router.delete("/:id", requireAuth, async (req: AuthRequest, res) => {
       .where(and(eq(jobsTable.id, id), eq(jobsTable.userEmail, req.user!.email)));
     res.json({ ok: true });
   } catch (err) {
-    res.status(500).json({ error: (err as Error).message });
+    res.status(500).json({ error: (err as Error).message || "Internal server error" });
   }
 });
 
