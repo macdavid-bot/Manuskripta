@@ -37,6 +37,21 @@ export interface HeadingColors {
   h4: string;
 }
 
+export interface FontStyleSetting {
+  family: string;
+  size: number;
+}
+
+export interface FontSettings {
+  title: FontStyleSetting;
+  subtitle: FontStyleSetting;
+  h1: FontStyleSetting;
+  h2: FontStyleSetting;
+  h3: FontStyleSetting;
+  h4: FontStyleSetting;
+  body: FontStyleSetting;
+}
+
 export interface BookInputs {
   title: string;
   subtitle?: string;
@@ -48,6 +63,7 @@ export interface BookInputs {
   pageSize: string;
   customWidth?: number;
   customHeight?: number;
+  fontSettings?: FontSettings;
   useHeadingColor: boolean;
   headingColors?: HeadingColors;
   copyrightOption: "generate" | "insert" | "default";
