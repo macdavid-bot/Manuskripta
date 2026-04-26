@@ -81,7 +81,7 @@ export default function FormatBookPage() {
     const inputs: BookInputs = {
       title: bookTitle.trim(), tableOfContents: chapters.map((c, i) => c.label || `Chapter ${i + 1}`).join("\n"),
       minPages: 0, maxPages: 0, tones: [], allowStorytelling: false, pageSize,
-      useHeadingColor: false, copyrightOption: "insert", mode: "format", formatData,
+      useHeadingColor: false, headingCapitalization: "titlecase", copyrightOption: "insert", mode: "format", formatData,
     };
 
     const job: BookJob = {

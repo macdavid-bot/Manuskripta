@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useApp } from "@/context/AppContext";
-import type { BookJob, BookInputs, HeadingColors } from "@/lib/types";
+import type { BookJob, BookInputs, HeadingCapitalization, HeadingColors } from "@/lib/types";
 
 const GOLD = "#D4AF37";
 const BG = "#000000";
@@ -76,6 +76,7 @@ export default function CreateBookPage() {
   const [pageSize, setPageSize] = useState("6 x 9 in");
   const [useHeadingColor, setUseHeadingColor] = useState(false);
   const [headingColors, setHeadingColors] = useState<HeadingColors>(DEFAULT_HEADING_COLORS);
+  const [headingCapitalization, setHeadingCapitalization] = useState<HeadingCapitalization>("titlecase");
   const [copyrightOption, setCopyrightOption] = useState<"generate" | "insert" | "default">("generate");
   const [copyrightText, setCopyrightText] = useState("");
   const [additionalPrompt, setAdditionalPrompt] = useState("");
@@ -121,6 +122,7 @@ export default function CreateBookPage() {
       pageSize,
       useHeadingColor,
       headingColors: useHeadingColor ? headingColors : undefined,
+      headingCapitalization,
       copyrightOption,
       copyrightText: copyrightOption !== "generate" ? effectiveCopyright : undefined,
       additionalPrompt: additionalPrompt.trim() || undefined,
@@ -253,6 +255,31 @@ export default function CreateBookPage() {
               })}
             </div>
           )}
+          <Field label="Heading Capitalization">
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              {([
+                { value: "uppercase", label: "ABC (uppercase)" },
+                { value: "titlecase", label: "Abc (title case)" },
+                { value: "lowercase", label: "abc (lowercase)" },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setHeadingCapitalization(opt.value)}
+                  style={{
+                    padding: "8px 14px",
+                    borderRadius: "8px",
+                    fontSize: "13px",
+                    cursor: "pointer",
+                    border: `1px solid ${headingCapitalization === opt.value ? GOLD : border}`,
+                    backgroundColor: headingCapitalization === opt.value ? "rgba(212,175,55,0.1)" : "transparent",
+                    color: headingCapitalization === opt.value ? GOLD : muted,
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </Field>
           <Field label="Additional Prompt (Optional)" hint="Extra direction for the AI — specific style notes, key themes to emphasize, or anything else.">
             <textarea value={additionalPrompt} onChange={(e) => setAdditionalPrompt(e.target.value)} placeholder="e.g. Focus heavily on practical examples. Use a direct, no-nonsense tone throughout." rows={4} style={{ ...inputStyle, backgroundColor: fieldBg, color: text, border: `1px solid ${border}`, resize: "vertical", lineHeight: "1.6" }} onFocus={(e) => (e.target.style.borderColor = GOLD)} onBlur={(e) => (e.target.style.borderColor = border)} />
           </Field>

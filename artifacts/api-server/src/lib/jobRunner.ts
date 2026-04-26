@@ -523,7 +523,8 @@ async function runFormat(
       formatData.bookTitle, formatData.copyright, formatData.dedication,
       formattedIntro, formattedChapters, formattedConclusion, formattedBackMatter,
       formatData.chapters.map((c, i) => c.label || `Chapter ${i + 1}`),
-      chapterSubtitles
+      chapterSubtitles,
+      inputs.headingCapitalization ?? "titlecase"
     );
     await completeJobAndIncrementUser(jobId, job.userEmail, { progress: 100, markdownContent: markdown, completedAt: Date.now() });
     await log("Book formatting complete!", "success");
